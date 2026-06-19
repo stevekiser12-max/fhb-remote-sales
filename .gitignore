@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+.next/
+out/
+
+# env
+.env.local
+.env*.local
+
+# data
+data/
+
+# debug
+npm-debug.log*
+
+# misc
+.DS_Store
+*.pem
+
+# iOS build artifacts
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/build/
+ios/DerivedData/
+*.xcuserstate
