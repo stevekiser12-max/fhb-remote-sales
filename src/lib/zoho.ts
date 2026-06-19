@@ -2,36 +2,80 @@
 // Uses search/get endpoints (not COQL — requires different scope)
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
+let refreshPromise: Promise<string> | null = null;
 
+// Serialize token refreshes — only one refresh at a time
 async function getAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt - 60000) {
     return cachedToken.token;
   }
 
-  const params = new URLSearchParams({
-    refresh_token: process.env.ZOHO_REFRESH_TOKEN!,
-    client_id: process.env.ZOHO_CLIENT_ID!,
-    client_secret: process.env.ZOHO_CLIENT_SECRET!,
-    grant_type: 'refresh_token',
-  });
+  // If another refresh is in flight, wait for it
+  if (refreshPromise) return refreshPromise;
 
-  const res = await fetch('https://accounts.zoho.com/oauth/v2/token', {
-    method: 'POST',
-    body: params,
-  });
+  refreshPromise = (async () => {
+    // Double-check after acquiring the "lock"
+    if (cachedToken && Date.now() < cachedToken.expiresAt - 60000) {
+      return cachedToken.token;
+    }
 
-  const data = await res.json();
-  if (!data.access_token) throw new Error('Zoho token refresh failed: ' + JSON.stringify(data));
+    const params = new URLSearchParams({
+      refresh_token: process.env.ZOHO_REFRESH_TOKEN!,
+      client_id: process.env.ZOHO_CLIENT_ID!,
+      client_secret: process.env.ZOHO_CLIENT_SECRET!,
+      grant_type: 'refresh_token',
+    });
 
-  cachedToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
-  };
+    const res = await fetch('https://accounts.zoho.com/oauth/v2/token', {
+      method: 'POST',
+      body: params,
+    });
 
-  return cachedToken.token;
+    const data = await res.json();
+    if (!data.access_token) throw new Error('Zoho token refresh failed: ' + JSON.stringify(data));
+
+    cachedToken = {
+      token: data.access_token,
+      expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
+    };
+
+    return cachedToken.token;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
 }
 
-async function zohoGet(endpoint: string, params?: Record<string, string>) {
+// Throttle Zoho API calls — max 3 concurrent requests
+const ZOHO_MAX_CONCURRENT = 3;
+let zohoActiveRequests = 0;
+const zohoQueue: Array<{ resolve: (v: unknown) => void; reject: (e: unknown) => void; fn: () => Promise<unknown> }> = [];
+
+function runZohoQueue() {
+  while (zohoQueue.length > 0 && zohoActiveRequests < ZOHO_MAX_CONCURRENT) {
+    const item = zohoQueue.shift()!;
+    zohoActiveRequests++;
+    item.fn()
+      .then(item.resolve)
+      .catch(item.reject)
+      .finally(() => {
+        zohoActiveRequests--;
+        runZohoQueue();
+      });
+  }
+}
+
+function throttledZoho<T>(fn: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    zohoQueue.push({ resolve: resolve as (v: unknown) => void, reject, fn: fn as () => Promise<unknown> });
+    runZohoQueue();
+  });
+}
+
+async function zohoGetRaw(endpoint: string, params?: Record<string, string>) {
   const token = await getAccessToken();
   const url = new URL(`${process.env.ZOHO_API_DOMAIN}/crm/v5${endpoint}`);
   if (params) {
@@ -50,6 +94,10 @@ async function zohoGet(endpoint: string, params?: Record<string, string>) {
   }
 
   return res.json();
+}
+
+async function zohoGet(endpoint: string, params?: Record<string, string>) {
+  return throttledZoho(() => zohoGetRaw(endpoint, params));
 }
 
 async function zohoPost(endpoint: string, body: unknown) {
