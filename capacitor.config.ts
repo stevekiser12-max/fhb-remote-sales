@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.favoredhomebuyers.leadpilot',
-  appName: 'FHB Remote Sales',
+  appName: 'Favored Sales',
   webDir: 'out',
   server: {
     // In production, load from the live URL so we get server-side features
