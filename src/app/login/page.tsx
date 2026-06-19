@@ -55,8 +55,12 @@ export default function LoginPage() {
       background: 'var(--bg)',
     }}>
       <div style={{ marginBottom: 32, textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>🏠</div>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Lead Pilot</h1>
+        <img
+          src="/fhb-logo-200.png"
+          alt="FHB"
+          style={{ width: 100, height: 100, borderRadius: 20, marginBottom: 12 }}
+        />
+        <h1 style={{ fontSize: 22, fontWeight: 700 }}>FHB Remote Sales</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>
           Favored Home Buyers
         </p>
