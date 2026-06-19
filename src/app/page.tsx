@@ -133,7 +133,7 @@ export default function HomePage() {
   if (!user) return null;
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 100 }}>
       {/* Header */}
       <div style={{
         position: 'sticky', top: 0, background: '#0a0a0a', zIndex: 50,

@@ -34,7 +34,7 @@ export default function SettingsInner() {
   if (!user) return null;
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 100 }}>
       <div style={{
         padding: '16px',
         borderBottom: '1px solid var(--border)',

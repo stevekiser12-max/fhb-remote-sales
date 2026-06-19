@@ -199,7 +199,7 @@ export default function LeadDetailInner({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <div style={{ padding: 16, paddingBottom: 80 }}>
+      <div style={{ padding: 16, paddingBottom: 100 }}>
         <div className="skeleton" style={{ height: 200, borderRadius: 14 }} />
         <BottomNav />
       </div>
@@ -218,7 +218,7 @@ export default function LeadDetailInner({ params }: { params: Promise<{ id: stri
   const phone = record.phone || record.mobile;
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 100 }}>
       {/* Toast */}
       {toast && (
         <div style={{
